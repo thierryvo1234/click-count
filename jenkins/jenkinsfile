@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    tools { 
+        maven 'Maven 3.5.4'
+        jdk 'java-1.8.0-openjdk'
+    }
+    stages{
+        stage ('Build - Maven') {
+            steps{
+                echo "Building - Maven..."
+                sh 'cd /apps/click-count && mvn package'
+                
+            }
+        }
+        stage ('Test'){
+            steps{
+                echo "Testing..."
+                sh 'cd /apps/click-count && mvn package'
+
+            }
+        }
+        stage('Build - Docker image'){
+            steps{
+                echo "Building - Docker image..."
+                sh 'cd /apps && docker build --no-cache -t terryv8/web-app .'
+            }
+        }
+
+        stage ('Deploy'){
+            steps{
+                echo 'Deploying...'
+            }
+        }
+        stage ('End'){
+            steps{
+                //dir ('/var/lib/jenkins/workspace/pipeline-demo')
+                echo 'End...'
+            }
+        }   
+    }
+}

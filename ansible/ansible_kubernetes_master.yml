@@ -1,0 +1,106 @@
+---
+- hosts: k8s-master
+  remote_user: ec2-user
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Kubeadm init
+      command: "kubeadm init --pod-network-cidr=10.244.0.0/16"
+      ignore_errors: yes
+      register: resulut_kubeadm_init
+
+    - name: Copy the result of the command kubeadm init to our local machine
+      local_action: "copy content='{{ resulut_kubeadm_init.stdout }}' dest=/apps/terransible/tmp/result_kubeadm_init.txt"
+
+    - name: Create .kube directory
+      file:
+        path: /home/ec2-user/.kube
+        state: directory
+        mode: 0755
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Copy admin.conf to user's kube config on the remote master machine
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ec2-user/.kube/config
+        remote_src: yes
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Install Pod network - No need for root priviledge
+      become: no
+      become_user: ec2-user
+      command: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+
+    - name: Deploy the web-app pods
+      block:
+        - name: Create the web-app pods service file
+          blockinfile:
+            path: /home/ec2-user/service-web-app.yml
+            create: yes
+            mode: 0755
+            owner: ec2-user
+            group: ec2-user
+            block: |
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: web-app
+              spec:
+                selector:
+                  app: web-app
+                ports:
+                - protocol: TCP
+                  port: 8080
+                  targetPort: 8080
+                  nodePort: 30808
+                type: NodePort
+
+        - name: Launch the web-app pods service
+          become: no
+          become_user: ec2-user
+          command: "kubectl create -f /home/ec2-user/service-web-app.yml"
+          ignore_errors: yes
+
+        - name: Create the web-app pods deployment file
+          blockinfile:
+            path: /home/ec2-user/deployment-web-app.yml
+            create: yes
+            mode: 0755
+            owner: ec2-user
+            group: ec2-user
+            block: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: web-app
+                labels:
+                  app: web-app
+              spec:
+                replicas: 2
+                selector:
+                  matchLabels:
+                    app: web-app
+                template:
+                  metadata:
+                    labels:
+                      app: web-app
+                  spec:
+                    hostAliases:
+                    - ip: {{ redis_aws_endpoint }}
+                      hostnames:
+                      - "redis"
+                    containers:
+                      - image: thierrylamvo/web-app
+                        name: web-app
+                        ports:
+                        - containerPort: 80
+                        imagePullPolicy: Always
+
+        - name: Launch the web-app pods deployment
+          become: no
+          become_user: ec2-user
+          command: "kubectl create -f /home/ec2-user/deployment-web-app.yml"
+          ignore_errors: yes
