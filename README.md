@@ -125,8 +125,8 @@ We use ansible as a tool of deployment of configurations
     - [Then play the playbook for setting up Kubernetes on Worker nodes](docs/ansible_playbook_kubernetes_workers.md)
 
 # 4. Bonus: Alternative Kubernetes Setups to think for later
-- #### [Multi-Master Redis Cluster](docs/kubernetes_multi_master_nodes_setup.md) (Alternative to consider for later)
-- #### [Automated Kubernetes Deployment with EKS / ECS provided by AWS](docs/eks_setup.md) (Alternative to consider for later)
+- #### [Multi-Master Redis Cluster](docs/kubernetes_multi_master_nodes_setup.md) (Alternative to consider for later - to improve)
+- #### [Automated Kubernetes Deployment with EKS / ECS provided by AWS](docs/eks_setup.md) (Alternative to consider for later  - to improve)
 
 Outside this GitHub project above, [I have kept some extra personal notes](docs/outside_project.md)
 
